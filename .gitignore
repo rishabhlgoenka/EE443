@@ -1,0 +1,14 @@
+# Ignore LaTeX files
+*.tex
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.toc
+
+# OS files
+.DS_Store
+__pycache__/
+.ipynb_checkpoints/
