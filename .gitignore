@@ -8,6 +8,9 @@
 *.fls
 *.toc
 
+# Large data files (exceed GitHub 100MB limit)
+HW1/data_hw1/data/p2/mnist_train.csv
+
 # OS files
 .DS_Store
 __pycache__/
