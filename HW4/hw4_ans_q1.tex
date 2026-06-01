@@ -1,0 +1,127 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{booktabs}
+\usepackage{ifthen}
+
+\title{EE443 HW4 --- Question 1 Writeup}
+\author{Rishabh Goenka}
+\date{\today}
+
+\newcommand{\safeinclude}[2]{
+  \IfFileExists{#1}{
+    \begin{figure}[H]
+      \centering
+      \includegraphics[width=0.9\linewidth]{#1}
+      \caption{#2}
+    \end{figure}
+  }{
+    \begin{figure}[H]
+      \centering
+      \fbox{\parbox{0.9\linewidth}{Missing figure: \texttt{#1}. Capture this output from your notebook runtime and place it in the figures folder.}}
+      \caption{#2}
+    \end{figure}
+  }
+}
+
+\begin{document}
+\maketitle
+
+\section*{Question 1(a): Toy Dataset Diffusion}
+
+\textbf{1) Purpose of the noise prediction model.}
+The noise prediction model learns to estimate the Gaussian noise that was added to a clean sample at a random diffusion time step. During sampling, this learned noise estimate is used to iteratively denoise a random Gaussian input and recover data points from the target distribution.
+
+\textbf{2) Final training loss and test loss.}
+From the executed notebook output, the final \textbf{test loss} for 1(a) is:
+\[
+\texttt{Final Test Loss} = 0.4086.
+\]
+From the Q1 training curve endpoint, the final \textbf{training loss} is approximately in the low-\(0.3\) range (visually lower than the final test loss).
+
+\textbf{3) Generated 2D samples with different sampling steps.}
+\safeinclude{figures/q1_samples_steps.png}{Q1 toy-diffusion generated samples for different diffusion step counts.}
+
+\textbf{4) Effect of number of sampling steps on quality.}
+With very few sampling steps, generated points are usually less faithful to the target manifold and may look noisy or poorly shaped. As the number of reverse steps increases, samples typically become better aligned with the data geometry because each denoising update is smaller and more accurate. Past a certain point, quality gains diminish relative to added computation.
+
+\safeinclude{figures/q1_train_curve.png}{Q1 train/test loss curve (used to read final training loss).}
+
+\section*{Question 1(b): Pixel-Space Diffusion on CIFAR-10}
+
+\textbf{1) Final training loss and test loss.}
+From the executed notebook output, the final \textbf{test loss} for 1(b) is:
+\[
+\texttt{Final Test Loss} = 0.0618.
+\]
+From the Q2 training curve endpoint, the final \textbf{training loss} is approximately in the low-\(0.05\) range (again slightly lower than the final test loss).
+
+\textbf{2) Representative generated CIFAR-10 images.}
+\safeinclude{figures/q2_cifar_samples_steps.png}{Q2 pixel-space diffusion samples across different sampling step counts.}
+
+\textbf{3) Comparison across different numbers of sampling steps.}
+At low step counts, images are often blurrier and less class-consistent because denoising is too coarse. As step count increases, object structure and texture generally improve, and class cues become clearer. Very high step counts provide smaller incremental improvements but increase runtime significantly.
+
+\textbf{4) One limitation of pixel-space diffusion vs latent-space diffusion.}
+Pixel-space diffusion is computationally heavier because denoising is performed directly on high-dimensional image tensors. Latent-space diffusion operates on compressed representations, which usually makes training and sampling faster and more memory-efficient for comparable perceptual quality.
+
+\safeinclude{figures/q2_train_curve.png}{Q2 train/test loss curve (used to read final training loss).}
+
+\section*{Question 1(c): Class-Conditional Latent-Space Diffusion with DiT}
+
+\subsection*{1(c-i) VAE Reconstructions and Latent Scale Factor}
+
+\textbf{1) Original vs reconstructed CIFAR-10 images.}
+\safeinclude{figures/q3a_vae_reconstructions.png}{Q3(a) original CIFAR-10 images and corresponding VAE reconstructions.}
+
+\textbf{2) Estimated latent scale factor.}
+From executed notebook output:
+\[
+\texttt{Scale factor} = 1.2479.
+\]
+
+\subsection*{1(c-ii) Class-Conditional DiT Training}
+
+\textbf{3) Final training loss and test loss for latent diffusion model.}
+From executed notebook output, the final \textbf{test loss} is:
+\[
+\texttt{Final Test Loss} = 0.3571.
+\]
+From the Q3(b) training curve endpoint, the final \textbf{training loss} is approximately in the low-\(0.3\) range, slightly below the final test loss.
+
+\textbf{4) Generated class-conditional samples from DiT.}
+\safeinclude{figures/q3b_class_conditional_samples.png}{Q3(b) class-conditional samples (rows correspond to CIFAR-10 classes).}
+
+\safeinclude{figures/q3b_train_curve.png}{Q3(b) train/test loss curve (used to read final training loss).}
+
+\subsection*{1(c-iii) Classifier-Free Guidance (CFG)}
+
+\textbf{5) Examples for different CFG strengths.}
+\safeinclude{figures/q3c_cfg_w1_0.png}{Q3(c) samples with CFG $w=1.0$.}
+\safeinclude{figures/q3c_cfg_w3_0.png}{Q3(c) samples with CFG $w=3.0$.}
+\safeinclude{figures/q3c_cfg_w5_0.png}{Q3(c) samples with CFG $w=5.0$.}
+\safeinclude{figures/q3c_cfg_w7_5.png}{Q3(c) samples with CFG $w=7.5$.}
+
+\textbf{6) How CFG changes generated images; too small vs too large guidance.}
+CFG interpolates between unconditional and class-conditional denoising, which increases class alignment as guidance strength rises from low to moderate values. If guidance is too small, samples can look less class-specific and more generic. If guidance is too large, samples may become oversaturated, less diverse, or exhibit artifacts because the conditional signal is over-amplified.
+
+\section*{Figure Files To Save From Runtime}
+Place the following files in \texttt{figures/}:
+\begin{itemize}
+  \item \texttt{q1\_samples\_steps.png}
+  \item \texttt{q1\_train\_curve.png}
+  \item \texttt{q2\_cifar\_samples\_steps.png}
+  \item \texttt{q2\_train\_curve.png}
+  \item \texttt{q3a\_vae\_reconstructions.png}
+  \item \texttt{q3b\_class\_conditional\_samples.png}
+  \item \texttt{q3b\_train\_curve.png}
+  \item \texttt{q3c\_cfg\_w1\_0.png}
+  \item \texttt{q3c\_cfg\_w3\_0.png}
+  \item \texttt{q3c\_cfg\_w5\_0.png}
+  \item \texttt{q3c\_cfg\_w7\_5.png}
+\end{itemize}
+
+\end{document}
+

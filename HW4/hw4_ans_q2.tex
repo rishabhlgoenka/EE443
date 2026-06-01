@@ -1,0 +1,112 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{ifthen}
+
+\title{EE443 HW4 --- Question 2 Writeup}
+\author{Rishabh Goenka}
+\date{\today}
+
+\newcommand{\safeinclude}[2]{
+  \IfFileExists{#1}{
+    \begin{figure}[H]
+      \centering
+      \includegraphics[width=0.92\linewidth]{#1}
+      \caption{#2}
+    \end{figure}
+  }{
+    \begin{figure}[H]
+      \centering
+      \fbox{\parbox{0.9\linewidth}{Missing figure: \texttt{#1}.}}
+      \caption{#2}
+    \end{figure}
+  }
+}
+
+\begin{document}
+\maketitle
+
+\section*{Question 2(a): Dataset Inspection and Preprocessing}
+
+\textbf{1) Number of training examples, test examples, and classes.}  
+From the executed notebook outputs, the dataset split used for this homework run contains:
+\begin{itemize}
+  \item Training examples: \textbf{4000}
+  \item Test examples: \textbf{1000}
+  \item Food-101 classes: \textbf{101}
+\end{itemize}
+
+\textbf{2) Example images and labels from the training split.}  
+\safeinclude{figures/q2a_training_examples.png}{Training-split examples with class labels.}
+
+\textbf{3) Why images must be resized/cropped and normalized before ViT.}  
+The pretrained ViT expects a fixed input resolution (224x224 in this notebook) and a specific input distribution. Resizing/cropping ensures the patch embedding layer receives the correct spatial dimensions, and normalization keeps pixel values on the scale the backbone was pretrained on. Matching these preprocessing steps makes transferred features meaningful and stable during fine-tuning.
+
+\textbf{4) What can go wrong if normalization stats do not match pretrained expectations.}  
+If mean/std do not match, the model receives shifted/scaled inputs compared to pretraining. This can distort activations, reduce calibration, and hurt accuracy even when architecture and labels are correct. In practice, the model may converge slower and underperform because it is effectively operating out-of-distribution at the input level.
+
+\section*{Question 2(b): Metric Computation and ViT Model Setup}
+
+\textbf{1) How predicted class is obtained from logits.}  
+For each image, the model outputs one logit per class. The predicted class is computed with an \texttt{argmax} over the logits along the class dimension, i.e., the index of the largest logit.
+
+\textbf{2) Is accuracy always sufficient? One misleading case.}  
+Accuracy is useful but not always sufficient. A classic misleading case is class imbalance: a model can achieve high overall accuracy by doing well on frequent classes while performing poorly on rare classes. In such settings, per-class recall/F1 or confusion-matrix analysis gives a more complete picture.
+
+\textbf{3) Which part of ViT is pretrained vs newly initialized for Food-101.}  
+The ViT backbone (patch embedding and transformer encoder stack) is loaded from the pretrained checkpoint. The final classification head is newly configured for this task with \textbf{101} labels and learned during fine-tuning.
+
+\textbf{4) Why ViT splits an image into patches before self-attention.}  
+Self-attention works over sequences of tokens, not raw 2D pixels directly. ViT converts the image into fixed-size patches and treats each patch as a token embedding, which makes global attention over the full image computationally tractable while still capturing long-range relationships.
+
+\section*{Question 2(c): Fine-Tuning and Evaluation}
+
+\textbf{1) Final validation accuracy and final evaluation loss.}  
+From the executed notebook output:
+\begin{itemize}
+  \item Final validation accuracy: \textbf{0.953}
+  \item Final evaluation loss: \textbf{0.42274072766304016}
+\end{itemize}
+
+\textbf{2) Main training settings (learning rate, batch size, epochs).}  
+The run used:
+\begin{itemize}
+  \item Learning rate: \texttt{5e-5}
+  \item Per-device train batch size: \texttt{16}
+  \item Per-device eval batch size: \texttt{16}
+  \item Number of epochs: \texttt{3}
+\end{itemize}
+
+\textbf{3) Effect of increasing batch size, learning rate, or epochs.}  
+Larger batch size usually improves throughput and gradient stability but can increase memory use and sometimes reduce generalization if too large. A higher learning rate can speed early learning, but if set too high it can destabilize training or overshoot minima. More epochs can improve fit at first, but eventually increase overfitting risk, especially with a relatively small subset.
+
+\textbf{4) One ViT strength vs one CNN strength.}  
+A key ViT strength is global context modeling through attention across the whole image. A key CNN strength is strong local inductive bias (translation-equivariant filters), which often makes CNNs more data-efficient and robust on smaller datasets.
+
+\section*{Question 2(d): Inference and Error Analysis}
+
+\textbf{1) Figure with validation images and predicted/true labels.}  
+\safeinclude{figures/q2d_validation_predictions.png}{Validation examples with predicted and true labels.}
+
+\textbf{2) At least two correct and at least two incorrect predictions.}  
+The prediction figure contains multiple correct predictions (predicted label matches true label) and is used as qualitative evidence of model performance. The notebook's explicit error scan over the first 100 validation examples reported exactly two misclassifications:
+\begin{itemize}
+  \item \texttt{index=23 | pred=pork\_chop | true=prime\_rib}
+  \item \texttt{index=74 | pred=beignets | true=prime\_rib}
+\end{itemize}
+
+\textbf{3) Why these examples may be classified correctly/incorrectly.}  
+Correct predictions likely come from strong texture/shape cues that are distinctive for the food class and preserved after resizing/cropping. The two mistakes are plausible because \texttt{prime\_rib} can visually overlap with other classes under varied lighting, plating, and crop context. Similar color/texture patterns and partial views can make class boundaries ambiguous for the model.
+
+\textbf{4) One limitation of the experiment.}  
+One limitation is data scale and budget: training was done on a reduced subset (4000 train / 1000 test) for only 3 epochs. This setup is good for fast experimentation but may not fully capture long-tail class variation in Food-101.
+
+\section*{Figure Files Used}
+\begin{itemize}
+  \item \texttt{figures/q2a\_training\_examples.png}
+  \item \texttt{figures/q2d\_validation\_predictions.png}
+\end{itemize}
+
+\end{document}
+
